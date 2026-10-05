@@ -69,7 +69,7 @@ Everything else is grouped into sections, each with a count of the tiles inside 
 | **Easy Purchase** | **Easy Purchase**, **Quick Return** |
 | **Contacts** | **Customers**, **Customer ID Proofs** |
 | **Finance** | **Expenses** |
-| **Accounting** | **Invoices**, **Journal Entries**, **Partner Ledger** |
+| **Accounting** | **Invoices**, **Journal Entries**, **Partner Ledger**, **Opening Balance** |
 | **Administration** | **Users**, **App Banners**, **Apps Privileges**, **Invoice Settings**, **User Manual** |
 
 The five **Administration** tiles are for administrators only. They stay visible to everyone, but tapping one as an ordinary user just shows **Only administrators can access this feature**.
@@ -80,17 +80,24 @@ The five **Administration** tiles are for administrators only. They stay visible
 
 | IMAGE 2 | The Home screen — the Quick Access bar and the grouped tiles
 
-### Step 3  The Three Tabs, and Signing Out
+### Step 3  The Three Tabs, Your Company, and Signing Out
 
 Along the bottom of every screen sit three tabs: **Home**, **Profile** and **Logout**.
 
-**Profile** shows who you are signed in as — a **Connected** badge, then **User ID**, **Database**, **Role** and **Login**. Under **HELP** there is **User Manual** (**View or download the guides**), which opens the guides your administrator has published. The version of the app is printed at the bottom.
+**Profile** shows who you are signed in as — a **Connected** badge, then **User ID**, **Database**, **Role**, **Login** and **Company**. Under **HELP** there is **User Manual** (**View or download the guides**), which opens the guides your administrator has published. The version of the app is printed at the bottom.
+
+**Company** names the company you are working in. If your login is allowed into only one company, that is all it does. If you are allowed into two or more, the row carries an arrow: tap it and **Choose company** opens, explaining **The app shows registers, products and customers of this company.** Tap the company you want.
+
+The app checks before it changes anything — **Switch company?** and **Change from** one company **to** the other, with **You'll see this company's registers, products and customers.** Tap **SWITCH**, or **CANCEL** to stay where you are. Once switched, a message reads **Switched to** and the company's name.
+
+From then on the registers, products and customers you see are that company's, and a sale is booked under the company its register belongs to. The app remembers your choice, so the next time you sign in you are still in the same company.
 
 **Logout** is not really a tab. Tapping it asks **Are you sure you want to log out?** — tap **YES** to confirm. You are returned to the sign-in screen.
 
 | What you tap | What happens |
 | **Home** | Back to the tile grid |
 | **Profile** | Who you are, which database, and the manuals |
+| **Company** | Shows your company; with more than one, lets you switch |
 | **Logout** | Asks to confirm, then signs you out |
 
 | IMAGE 3 | Profile — the HELP card with User Manual, and the three tabs along the bottom
@@ -344,6 +351,8 @@ The **Due** chip, and the **Due** pill on the Orders list, both open the same **
 
 > IMPORTANT  The two halves are meant to differ. When the customer pays something the top half stays where it was, because it is the record of that sale, while the bottom half drops. That is not a mistake — it is why both are there.
 
+On some servers the figures from the day of the sale are not kept. There the card reads **CUSTOMER DUE (CURRENT)** and the top half of the box reads **CURRENT BALANCE** instead: both show what the customer owes right now, not what they owed on the day.
+
 | IMAGE 16 | An order opened from the list, with its items, totals and action chips
 | IMAGE 45 | The same order showing the amber CUSTOMER DUE card and the Due chip
 | IMAGE 46 | The Customer Due box — the frozen figures above, the open invoices below
@@ -550,6 +559,55 @@ Tapping any row opens the invoice behind it.
 
 | IMAGE 31 | The Sales Report screen
 
+### Step 39  Enter Opening Balances from the Paper Records
+
+When you start using the app, your customers may already owe you money from before — written in a ledger book, not in the system. **Opening Balance** is where you type those old amounts in, once, so they show up against each customer from then on.
+
+Tap **Opening Balance** on Home, in the **Accounting** section. At the top, **Balance as on** shows the date the amounts are counted up to; tap it to change it (it cannot be a future date). Below that, a dark strip shows how many **Customers** are on the list and their **Total**. An empty list says **No customers yet. Tap “Add” to enter a balance from the paper records.**
+
+| IMAGE 47 | The Opening Balance tile in the Accounting section of Home
+
+Tap the orange **Add** button. The **Add Opening Balance** window opens. Under **Customer**, type a name or a phone number into **Type customer name or phone** and tap the right person in the list. If they are not in the system yet, tap **Create** with the typed name beside it — the customer form opens, and when you save it you come straight back with that customer already chosen.
+
+Under **Outstanding by age (days)** there are five boxes: **0–30**, **31–60**, **61–90**, **91–120** and **>120** days. Put each amount in the box for how old it is, in whole numbers. The **Total** adds them up as you type. Tap **Add** to put the customer on the list.
+
+> IMPORTANT  As soon as you type an amount, a yellow note appears: **⚠️ Check every amount twice. Once published, opening balances can't be changed or published again.** Each box with an amount in it gets a yellow border. Check them against the paper before you tap **Add**.
+
+| What you see | What it means |
+| **Add** greyed out | Pick a customer and enter at least one amount first |
+| **Already in the list — you are editing that entry.** | That customer is on the list already; you are changing their amounts, not adding them twice |
+| **No customer found.** | Nothing matches what you typed — check the spelling, or create the customer |
+| **Search failed — check the connection.** | The app could not reach the server to search |
+
+Each customer on the list shows their total and a chip for every age that has an amount. The pencil opens the entry again (the button now reads **Update**); the red bin asks **Remove** that customer **from the list?** — tap **Remove** or **Cancel**.
+
+The list is kept on this tablet as you go, so you can close the app and come back to it later. Nothing reaches the accounts until you publish.
+
+| IMAGE 48 | The Opening Balance list — the date, the Customers and Total strip, and one card per customer
+
+| IMAGE 49 | Picking the customer — type a name or phone and tap the match
+
+| IMAGE 50 | The Add Opening Balance window with amounts in the age boxes and the Total beneath
+
+When every amount has been checked, tap **Publish** at the bottom. An **Admin password** window asks for an administrator's password. It tells you how many customer balances will be posted and their total, and warns **⚠️ This can't be undone. Check all amounts — they can't be published again.** It signs in as the main administrator; tap **Different admin?** to type another administrator's login. Type the password and tap **Verify**.
+
+| IMAGE 51 | The Admin password window that guards Publish
+
+The app then works through the steps one by one — **Checking existing balances…**, **Preparing opening balance batch…**, **Generating Excel file…**, **Uploading…**, **Verifying customers and amounts…**, **Importing lines…** and **Posting journal entry…** — with **Don't close the app or go back until this finishes.** underneath. When it is done you see **Opening balances posted** with the number of customers and the total. Tap **Done**; the list is cleared.
+
+| If you see | Do this |
+| **Already has an opening balance** | Some of these customers have one in the system already. **Cancel** to check, or **Post anyway** to add another on top |
+| **Publish failed** | Read the reason, fix it, and tap **Retry**. **Your entries are kept.** |
+| **No answer from the server** | Tap **Retry**. It checks the server first and only finishes what is missing — it never posts twice |
+| **Wrong password.** | Try again. After three wrong tries the window locks for a minute |
+| **The last publish didn't finish.** | The list is locked. Tap **Resume publish**, or **Start over instead** (needs the admin password) to cancel the unfinished upload and edit the list again |
+
+If the server does not have the Opening Balance feature installed, a blue note says **Publishing isn't available yet.** and the button reads **Publish unavailable**. You can still enter and keep balances on the tablet; ask your administrator to install it, then come back and publish.
+
+| IMAGE 52 | Publish unavailable — the server does not have the Opening Balance feature yet
+
+> TIP  Do this once, when you first move a customer's old balance into the app. Once a balance has been published it cannot be edited or published again from here.
+
 # QUICK REFERENCE
 
 ## Where Things Live
@@ -566,6 +624,8 @@ Tapping any row opens the invoice behind it.
 | Check what you hold | **Stock** |
 | Record a purchase | **Easy Purchase** |
 | Send goods back to a vendor | **Quick Return** |
+| Enter old balances from paper | **Opening Balance** → **Add** → **Publish** |
+| Work in another company | **Profile** → **Company** |
 | Read the manuals | **Profile** → **User Manual** |
 
 ## Things to Remember
@@ -581,6 +641,8 @@ Tapping any row opens the invoice behind it.
 - **Clear your drafts before closing the register**, or they will have to be discarded.
 - **Done ends the sale.** Print or download before you tap it.
 - **A missing tile is usually a privilege, not a fault.** Ask your administrator.
+- **Opening balances go in once.** Check every amount twice — after publishing they cannot be changed or published again.
+- **The company you pick on Profile sticks.** Registers, products and customers follow it until you switch back.
 
 === Open the register, sell, take the money, hand over the receipt. Everything else in this guide hangs off those four things.
 
@@ -808,7 +870,7 @@ On **Profile**, under **HELP**, administrators get a second row: **Show to users
 
 ### Step 17  Install the Modules
 
-The app leans on eleven custom Odoo modules. Some are optional; two of them the app cannot start without.
+The app leans on twelve custom Odoo modules. Some are optional; two of them the app cannot start without.
 
 | Module | What it turns on in the app |
 | `device_login_config` | Device Setup and QR registration. **Without it no tablet can be configured at all** |
@@ -822,6 +884,7 @@ The app leans on eleven custom Odoo modules. Some are optional; two of them the 
 | `pos_total_discount` | The whole-order discount button in POS |
 | `product_dozen_display` | The Dozen Display fields and the **Dozen + Pcs** readout |
 | `hr_expense_payment_method` | The payment-method field on Expenses |
+| `opening_balance_customer_supplier` | Publishing on the **Opening Balance** screen. Without it the screen still takes entries but shows **Publish unavailable** |
 
 ### Step 18  Do the Things the App Cannot Do for You
 

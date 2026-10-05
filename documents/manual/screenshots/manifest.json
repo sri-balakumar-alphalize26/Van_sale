@@ -5,9 +5,11 @@
     "A slot with no file on disk still renders its bordered plate and caption, so the",
     "manual is always complete and simply gets better as captures arrive.",
     "Shoot on the tablet in portrait unless 'landscape' is stated. Do not include any",
-    "customer's real name or a real payment card in a capture."
+    "customer's real name or a real payment card in a capture.",
+    "blurred/ holds the same files for the Common copy, with the logo, company and",
+    "database names blurred; build-manual.ps1 -Variant common reads from there."
   ],
-  "_status": "6 of 46 captured",
+  "_status": "29 of 52 captured",
 
   "1":  { "file": "01-login.png",                 "capture": "Sign-in screen: 'Welcome back', 'Login to continue to your store', the ACCOUNT card with Username or Email and Password, and the Auto Fill Credentials switch." },
   "2":  { "file": "02-home.png",                  "capture": "Home, scrolled to the top: company logo, banner carousel, the date/time pill, the 'Quick Access / Manage your store' bar, and at least the Sales & POS and Inventory sections." },
@@ -56,5 +58,12 @@
 
   "44": { "file": "44-orders-due-pill.jpg",       "capture": "HAVE IT. The Orders list with the amber Due pill under the Receipt and Tax pills on rows that still owe money." },
   "45": { "file": "45-order-customer-due.jpg",    "capture": "HAVE IT. An open order showing the amber CUSTOMER DUE card - Previous Due, This Invoice, Total Due - and the Due chip in the action row." },
-  "46": { "file": "46-due-breakdown.jpg",         "capture": "HAVE IT. The Customer Due box: WHEN THIS ORDER WAS SOLD above, OPEN INVOICES NOW listing each unpaid bill, and Owed now beneath." }
+  "46": { "file": "46-due-breakdown.jpg",         "capture": "HAVE IT. The Customer Due box: WHEN THIS ORDER WAS SOLD above, OPEN INVOICES NOW listing each unpaid bill, and Owed now beneath." },
+
+  "47": { "file": "47-opening-balance-tile.png",  "capture": "HAVE IT. Home scrolled to ACCOUNTING showing the green Opening Balance tile beside Partner Ledger." },
+  "48": { "file": "48-opening-balance-list.png",  "capture": "HAVE IT (test build - shows a Test mode note and 'Publish (test: get Excel)'; re-take on a 1.6.0 build). The list: Balance as on, the Customers/Total strip, customer cards with age chips, Add and Publish." },
+  "49": { "file": "49-opening-balance-customer.png", "capture": "HAVE IT. Add Opening Balance with a name typed under Customer and the matching customer offered below; amount boxes still greyed out." },
+  "50": { "file": "50-opening-balance-amounts.png", "capture": "HAVE IT (test build, and taken before the yellow 'Check every amount twice' note existed - re-take on 1.6.0). Add Opening Balance with amounts in the age boxes and the Total." },
+  "51": { "file": "51-opening-balance-password.png", "capture": "HAVE IT (test build - message reads 'Test mode...'; re-take on 1.6.0 to show the 'This can't be undone' warning). The Admin password window with Signing as admin, Password, Different admin?, Cancel and Verify." },
+  "52": { "file": "52-opening-balance-unavailable.png", "capture": "HAVE IT. The blue 'Publishing isn't available yet' note and the greyed Publish unavailable button." }
 }

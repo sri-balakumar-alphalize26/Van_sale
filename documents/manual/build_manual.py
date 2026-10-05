@@ -332,7 +332,11 @@ def indent(paragraph, *, left=None, right=None, hanging=None):
 # --------------------------------------------------------------------------
 
 class ManualBuilder:
-    def __init__(self):
+    def __init__(self, shots: Path = SHOTS):
+        # The manifest always comes from the master folder; only the images
+        # are swapped, which is how the blurred copy is built from the same
+        # slots under the same filenames.
+        self.shots = shots
         self.doc = Document()
         self._configure_styles()
         self._configure_page(self.doc.sections[0])
@@ -628,7 +632,7 @@ class ManualBuilder:
         """
         self.figures_total += 1
         entry = self.manifest.get(str(number), {})
-        path = SHOTS / entry.get("file", "") if entry.get("file") else None
+        path = self.shots / entry.get("file", "") if entry.get("file") else None
 
         table = self.doc.add_table(rows=1, cols=1)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -706,11 +710,11 @@ def lint_asterisks(text: str) -> list[tuple[int, str]]:
     return out
 
 
-def build():
+def build(shots: Path = SHOTS, out: Path = DOCX):
     if not MD.exists():
         sys.exit(f"No manual source at {MD}")
 
-    b = ManualBuilder()
+    b = ManualBuilder(shots)
     source = MD.read_text(encoding="utf-8")
     lines = source.splitlines()
 
@@ -814,11 +818,19 @@ def build():
         b.body(line)
         i += 1
 
-    b.doc.save(DOCX)
-    print(f"Wrote {DOCX.name}")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    b.doc.save(out)
+    print(f"Wrote {out}")
     print(f"  sections : {len(b.doc.sections)}")
     print(f"  figures  : {b.figures_embedded} of {b.figures_total} illustrated")
 
 
 if __name__ == "__main__":
-    build()
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--shots", type=Path, default=SHOTS,
+                    help="folder the IMAGE files are read from (default: screenshots/)")
+    ap.add_argument("--out", type=Path, default=DOCX, help="where to write the .docx")
+    args = ap.parse_args()
+    build(args.shots.resolve(), args.out.resolve())

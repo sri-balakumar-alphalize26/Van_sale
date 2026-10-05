@@ -457,6 +457,19 @@ def verify_names(parts, pdf_text):
 
 
 def main():
+    # --docx/--pdf point the checks at a handed-out copy (App documents\...)
+    # instead of the master; every check is the same for all three.
+    import argparse
+
+    global DOCX, PDF
+    ap = argparse.ArgumentParser(description="Verify a built manual against the spec.")
+    ap.add_argument("--docx", type=Path, default=DOCX)
+    ap.add_argument("--pdf", type=Path, default=None,
+                    help="defaults to the .docx path with a .pdf extension")
+    args = ap.parse_args()
+    DOCX = args.docx.resolve()
+    PDF = (args.pdf or DOCX.with_suffix(".pdf")).resolve()
+
     for f in (MD, PY, PS1, DOCX, PDF):
         if not f.exists():
             sys.exit(f"Missing {f} - run build-manual.ps1 first")

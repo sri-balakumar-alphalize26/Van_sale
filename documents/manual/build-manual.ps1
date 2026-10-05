@@ -1,7 +1,17 @@
 # Build the Van Sale user manual: van-sale-user-manual.md -> .docx -> .pdf
 #
 #   powershell -File documents\manual\build-manual.ps1
+#   powershell -File documents\manual\build-manual.ps1 -Variant nexgenn
+#   powershell -File documents\manual\build-manual.ps1 -Variant common
 #   powershell -File documents\manual\build-manual.ps1 -RenderOnly
+#
+# No -Variant builds the master copy here in documents\manual. The two variants
+# are the copies handed out from documents\App documents:
+#
+#   nexgenn  screenshots\          -> App documents\Nexgenn_unblured\Van_Sale_User_Guide
+#   common   screenshots\blurred\  -> App documents\Common_blurred\Van_Sale_User_Guide
+#
+# Same Markdown, same slots, same filenames - only the images differ.
 #
 # Two stages, and they must not share a process.
 #
@@ -12,6 +22,10 @@
 # process to do stage 2.
 
 param(
+  # Which copy to build. Empty means the master copy in this folder.
+  [ValidateSet('', 'nexgenn', 'common')]
+  [string]$Variant = '',
+
   # Skip generation and only run the Word -> PDF stage. This is how the script
   # re-enters itself; it is also useful on its own after hand-editing the .docx.
   [switch]$RenderOnly
@@ -20,8 +34,22 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $here = $PSScriptRoot
-$base = Join-Path $here 'van-sale-user-manual'
-$md   = "$base.md"
+$md   = Join-Path $here 'van-sale-user-manual.md'
+$shots = Join-Path $here 'screenshots'
+
+switch ($Variant) {
+  'nexgenn' {
+    $base = Join-Path $here '..\App documents\Nexgenn_unblured\Van_Sale_User_Guide'
+  }
+  'common' {
+    $base = Join-Path $here '..\App documents\Common_blurred\Van_Sale_User_Guide'
+    $shots = Join-Path $shots 'blurred'
+  }
+  default {
+    $base = Join-Path $here 'van-sale-user-manual'
+  }
+}
+$base = [System.IO.Path]::GetFullPath($base)
 $docx = "$base.docx"
 $pdf  = "$base.pdf"
 
@@ -35,15 +63,17 @@ if (-not $RenderOnly) {
   # python-docx and Pillow live only on the 3.14 interpreter on this machine,
   # and there is no bare `python` on PATH - always go through the py launcher.
   Write-Host 'Generating the document...' -ForegroundColor Cyan
-  & py -3.14 (Join-Path $here 'build_manual.py')
+  & py -3.14 (Join-Path $here 'build_manual.py') --shots $shots --out $docx
   if ($LASTEXITCODE -ne 0) { throw "build_manual.py failed with exit code $LASTEXITCODE" }
 
   Write-Host "`nRendering the PDF in a separate process..." -ForegroundColor Cyan
-  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -RenderOnly
+  $renderArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-RenderOnly')
+  if ($Variant) { $renderArgs += @('-Variant', $Variant) }
+  & powershell.exe @renderArgs
   if ($LASTEXITCODE -ne 0) { throw "Render stage failed with exit code $LASTEXITCODE" }
 
   Write-Host "`nDone." -ForegroundColor Cyan
-  Get-ChildItem $docx, $pdf |
+  Get-ChildItem -LiteralPath $docx, $pdf |
     Format-Table Name, @{N = 'KB'; E = { [math]::Round($_.Length / 1KB, 1) } }, LastWriteTime -AutoSize
   return
 }
@@ -52,7 +82,7 @@ if (-not $RenderOnly) {
 # Stage 2 - Word renders the PDF.
 # --------------------------------------------------------------------------
 
-if (-not (Test-Path $docx)) { throw "No document to render at $docx" }
+if (-not (Test-Path -LiteralPath $docx)) { throw "No document to render at $docx" }
 
 # A Word that was killed rather than quit leaves entries under Resiliency, and
 # every later automated start then blocks trying to recover them - with no
