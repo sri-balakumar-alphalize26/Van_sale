@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { NavigationHeader } from '@components/Header';
-import { fetchOrdersOdoo, fetchPosOrderDetailOdoo, fetchOrdersDueSnapshotsOdoo, fetchPartnerOpenInvoicesOdoo } from '@api/services/generalApi';
+import { fetchOrdersOdoo, fetchPosOrderDetailOdoo, fetchOrdersDueSnapshotsOdoo, fetchPartnerOpenInvoicesOdoo, fetchPartnersOutstandingOdoo } from '@api/services/generalApi';
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { OverlayLoader } from '@components/Loader';
@@ -110,7 +110,27 @@ const MyOrdersScreen = ({ navigation, route }) => {
     const ids = (Array.isArray(data) ? data : []).map((o) => o?.id).filter(Boolean);
     if (!ids.length) return undefined;
     fetchOrdersDueSnapshotsOdoo({ orderIds: ids })
-      .then((map) => { if (alive && map) setDueByOrder((prev) => ({ ...prev, ...map })); })
+      .then(async (map) => {
+        if (!alive) return;
+        if (map) { setDueByOrder((prev) => ({ ...prev, ...map })); return; }
+        // No frozen snapshot on this server (module not installed): show what
+        // each customer owes right now instead, so the Due pill still appears.
+        const rows = (Array.isArray(data) ? data : []).filter((o) => o?.id);
+        const pidOf = (o) => (Array.isArray(o.partner_id) ? o.partner_id[0] : null);
+        const owed = await fetchPartnersOutstandingOdoo({ partnerIds: rows.map(pidOf) });
+        if (!alive || !owed) return;
+        const live = {};
+        for (const o of rows) {
+          const pid = pidOf(o);
+          if (!pid) continue;
+          const previousDue = Number(owed[pid]) || 0;
+          const thisInvoiceDue = o.amount_paid != null
+            ? Math.max(0, Number(o.amount_total || 0) - Number(o.amount_paid || 0))
+            : 0;
+          live[o.id] = { captured: true, live: true, previousDue, thisInvoiceDue, totalDue: previousDue + thisInvoiceDue };
+        }
+        setDueByOrder((prev) => ({ ...prev, ...live }));
+      })
       .catch(() => { /* no pills, list is unaffected */ });
     return () => { alive = false; };
   }, [data]);
@@ -490,6 +510,7 @@ const MyOrdersScreen = ({ navigation, route }) => {
         isVisible={dueModalVisible}
         order={dueModalOrder}
         snapshot={dueByOrder[dueModalOrder?.id]}
+        live={!!dueByOrder[dueModalOrder?.id]?.live}
         openInvoices={dueInvoices}
         loading={dueInvoicesLoading}
         currency={currency}

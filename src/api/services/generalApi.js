@@ -1429,6 +1429,47 @@ export const fetchPartnerOutstandingOdoo = async ({ partnerId, excludeMoveId = n
   }
 };
 
+// Batch version of the above for a page of orders: what each customer owes
+// right now. Used by My Orders when the server has no frozen due snapshot.
+// Returns { [partnerId]: amount }, or null when unavailable.
+export const fetchPartnersOutstandingOdoo = async ({ partnerIds = [] } = {}) => {
+  const ids = [...new Set((partnerIds || []).map(Number).filter((n) => Number.isFinite(n) && n > 0))];
+  if (!ids.length) return null;
+  try {
+    const companyId = getActiveCompanyId();
+    const resp = await axios.post(`${getOdooUrl()}/web/dataset/call_kw`, {
+      jsonrpc: '2.0',
+      method: 'call',
+      params: {
+        model: 'account.move.line',
+        method: 'search_read',
+        args: [[
+          ['partner_id', 'in', ids],
+          ['company_id', '=', companyId],
+          ['account_id.account_type', '=', 'asset_receivable'],
+          ['parent_state', '=', 'posted'],
+          ['reconciled', '=', false],
+        ]],
+        kwargs: { fields: ['partner_id', 'amount_residual'], context: { allowed_company_ids: [companyId] } },
+      },
+    }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
+    if (resp.data?.error) {
+      console.warn('[OUTSTANDING] batch error:', resp.data.error?.data?.message || resp.data.error);
+      return null;
+    }
+    const map = {};
+    for (const l of (resp.data?.result || [])) {
+      const pid = Array.isArray(l.partner_id) ? l.partner_id[0] : l.partner_id;
+      if (pid) map[pid] = (map[pid] || 0) + (Number(l.amount_residual) || 0);
+    }
+    console.log('[OUTSTANDING] batch for', ids.length, 'partner(s) ->', Object.keys(map).length, 'owing');
+    return map;
+  } catch (e) {
+    console.warn('fetchPartnersOutstandingOdoo exception:', e?.message || e);
+    return null;
+  }
+};
+
 // ── Customer Due snapshot on a pos.order ──────────────────────────────────
 // `fetchPartnerOutstandingOdoo` above is LIVE — it answers "what does this
 // customer owe right now?" and is what the receipt and the POS payment card

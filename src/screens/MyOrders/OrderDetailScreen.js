@@ -149,15 +149,28 @@ const OrderDetailScreen = ({ navigation, route }) => {
   // of this sale) and never changes once captured. The two legitimately differ
   // once the customer settles up.
   const [dueSnapshot, setDueSnapshot] = useState(null);
+  const [dueSnapshotChecked, setDueSnapshotChecked] = useState(false);
   useEffect(() => {
     let alive = true;
     const id = order?.id || null;
+    setDueSnapshotChecked(false);
     if (!id) { setDueSnapshot(null); return undefined; }
     fetchOrderDueSnapshotOdoo({ orderId: id })
       .then((res) => { if (alive) setDueSnapshot(res); })
-      .catch(() => { if (alive) setDueSnapshot(null); });
+      .catch(() => { if (alive) setDueSnapshot(null); })
+      .finally(() => { if (alive) setDueSnapshotChecked(true); });
     return () => { alive = false; };
   }, [order?.id]);
+
+  // What the yellow Customer Due card shows: the frozen snapshot when the
+  // server keeps one; when it can't (module not installed → null), the live
+  // balance above, labelled as current. An order from before the feature on a
+  // server that has the module (`captured: false`) still shows nothing.
+  const shownDue = dueSnapshot?.captured
+    ? dueSnapshot
+    : (dueSnapshotChecked && dueSnapshot === null && due
+      ? { ...due, captured: true, live: true }
+      : null);
 
   // Which invoices make up that balance — fetched LAZILY, only when the popup
   // is opened, matching how MyOrdersScreen and InvoicesListScreen load their
@@ -764,24 +777,24 @@ const OrderDetailScreen = ({ navigation, route }) => {
             order predates the feature (`captured` false, which is why a plain
             zero check is not enough), when the module isn't installed, and
             when the customer owed nothing — a settled sale looks as before. */}
-        {dueSnapshot?.captured && Number(dueSnapshot.totalDue) > 0 ? (
+        {shownDue && Number(shownDue.totalDue) > 0 ? (
           <View style={[s.totalsCard, s.dueCard]}>
             <View style={s.dueHeaderRow}>
               <MaterialIcons name="account-balance-wallet" size={16} color={DUE_FG} />
-              <Text style={s.dueTitle}>CUSTOMER DUE</Text>
+              <Text style={s.dueTitle}>{shownDue.live ? 'CUSTOMER DUE (CURRENT)' : 'CUSTOMER DUE'}</Text>
             </View>
             <View style={s.totalRow}>
               <Text style={s.dueLabel}>Previous Due</Text>
-              <Text style={s.dueValue}>{formatCurrency(dueSnapshot.previousDue, currency)}</Text>
+              <Text style={s.dueValue}>{formatCurrency(shownDue.previousDue, currency)}</Text>
             </View>
             <View style={s.totalRow}>
               <Text style={s.dueLabel}>This Invoice</Text>
-              <Text style={s.dueValue}>{formatCurrency(dueSnapshot.thisInvoiceDue, currency)}</Text>
+              <Text style={s.dueValue}>{formatCurrency(shownDue.thisInvoiceDue, currency)}</Text>
             </View>
             <View style={s.dueDivider} />
             <View style={s.totalRow}>
               <Text style={s.dueGrandLabel}>Total Due</Text>
-              <Text style={s.dueGrandValue}>{formatCurrency(dueSnapshot.totalDue, currency)}</Text>
+              <Text style={s.dueGrandValue}>{formatCurrency(shownDue.totalDue, currency)}</Text>
             </View>
           </View>
         ) : null}
@@ -885,7 +898,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
               that matters — it separates an order with no snapshot (placed
               before this feature, or outside the app) from a customer who
               genuinely owes nothing, which an amount test alone cannot do. */}
-          {dueSnapshot?.captured && Number(dueSnapshot.totalDue) > 0 ? (
+          {shownDue && Number(shownDue.totalDue) > 0 ? (
             <TouchableOpacity
               onPress={openDueModal}
               activeOpacity={0.85}
@@ -1023,7 +1036,8 @@ const OrderDetailScreen = ({ navigation, route }) => {
       <DueBreakdownModal
         isVisible={dueModalVisible}
         order={order}
-        snapshot={dueSnapshot}
+        snapshot={shownDue}
+        live={!!shownDue?.live}
         openInvoices={dueInvoices}
         loading={dueInvoicesLoading}
         currency={currency}

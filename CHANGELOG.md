@@ -12,7 +12,19 @@ build.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-05
+
 ### Added
+- **Company switching in Profile.** On a server with several companies, Profile
+  shows a **Company** row; tap it, pick a company and confirm. Registers,
+  products, customers and every other list then show only that company's data,
+  like the company switcher in the web backend. With a single company the row
+  just shows its name. The choice is remembered for the next login.
+- **Customer Due banner without the server module.** The yellow due banner on an
+  order and the amber "Due" pill in My Orders now also show when the server
+  doesn't have the dynamic-invoice module: the app shows what the customer owes
+  right now. With the module installed, the balance at the time of sale is shown
+  as before.
 - **Opening Balance tile (Accounting).** Enter old customers' credit balances
   from the paper records, by age (0–30, 31–60, 61–90, 91–120, >120 days), and
   post them without anyone opening the web backend.
@@ -28,6 +40,15 @@ build.
     never posts twice.
   - If the server doesn't have the opening-balance module, the screen says so
     and Publish is disabled.
+  - A yellow ⚠️ note asks to check every amount twice as soon as one is typed,
+    and again before publishing, since posted balances can't be changed or
+    published again.
+
+### Fixed
+- **Place Order failed with a server error on some registers** of a
+  multi-company database (e.g. a register of company 2): the order and its
+  payment were always created under company 1. They now use the register's own
+  company, falling back to the company chosen in Profile.
 
 ## [1.5.1] - 2026-09-09
 

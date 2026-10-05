@@ -40,6 +40,7 @@ const DueBreakdownModal = ({
   order,
   snapshot,        // { previousDue, thisInvoiceDue, totalDue } — frozen at sale time
   openInvoices,    // { rows: [{ id, name, date, residual }], total } — live
+  live = false,    // snapshot is the customer's current balance (no frozen copy on the server)
   loading = false,
   currency,
   onClose,
@@ -78,8 +79,9 @@ const DueBreakdownModal = ({
 
           <Text style={s.totalDueLine}>{`Total due ${num(totalDue, currency)}`}</Text>
 
-          {/* Frozen — what the balance was on the day of this sale. */}
-          <Text style={s.sectionLabel}>WHEN THIS ORDER WAS SOLD</Text>
+          {/* Frozen — what the balance was on the day of this sale; or, when
+              the server keeps no snapshot, what the customer owes now. */}
+          <Text style={s.sectionLabel}>{live ? 'CURRENT BALANCE' : 'WHEN THIS ORDER WAS SOLD'}</Text>
           <View style={s.snapshotBox}>
             <View style={s.footerRow}>
               <Text style={s.footerLabel}>Previous Due</Text>
