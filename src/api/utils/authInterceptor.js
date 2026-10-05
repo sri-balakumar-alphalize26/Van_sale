@@ -43,7 +43,12 @@ const _readContextOnce = async () => {
       || null;
     const companyId = Array.isArray(u?.company_id) ? u.company_id[0] : (u?.company_id || null);
     const ctx = {};
-    if (Array.isArray(allowed)) {
+    // A company resolved at login / picked in Profile (`allowed_companies` is
+    // set alongside it) scopes everything to that one company, like the web
+    // company switcher. Older sessions without it keep the previous behaviour.
+    if (companyId && Array.isArray(u?.allowed_companies)) {
+      ctx.allowed_company_ids = [companyId];
+    } else if (Array.isArray(allowed)) {
       ctx.allowed_company_ids = allowed;
     } else if (companyId) {
       ctx.allowed_company_ids = [companyId];
@@ -57,7 +62,8 @@ const _readContextOnce = async () => {
         name: u?.name || null,
         company_id: companyId,
         allowed_company_ids: ctx.allowed_company_ids || null,
-        source: Array.isArray(u?.allowed_company_ids) ? 'top-level' :
+        source: companyId && Array.isArray(u?.allowed_companies) ? 'active company' :
+              Array.isArray(u?.allowed_company_ids) ? 'top-level' :
                 Array.isArray(u?.user_context?.allowed_company_ids) ? 'user_context' :
                 companyId ? 'company_id fallback' : 'none',
       });

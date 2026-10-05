@@ -26,7 +26,8 @@ import { showToastMessage } from "@components/Toast";
 
 import { setRuntimeBaseUrl, setRuntimeDb } from "@api/config/odooConfig";
 import { fetchCompanyCurrency, fetchUserCompanyId, fetchDecimalAccuracy } from "@api/services/currencyApi";
-import { fetchCompanyProfileOdoo } from "@api/services/generalApi";
+import { fetchCompanyProfileOdoo, fetchUserCompaniesOdoo } from "@api/services/generalApi";
+import { activeCompanyKey } from "@stores/auth/useAuthStore";
 import { saveCurrencyConfig } from "@utils/currency";
 import { useCurrencyStore } from "@stores/currency";
 import { invalidateAuthContextCache } from "@api/utils/authInterceptor";
@@ -279,6 +280,25 @@ const LoginScreenOdoo = () => {
               await _writeSavedMap(map);
             }
           } catch (_) {}
+
+          // Companies this user may work in. One → it's the default; more →
+          // the server default, or the one picked earlier in Profile if it's
+          // still allowed. The interceptor scopes every request to it.
+          try {
+            const { defaultId, companies } = await fetchUserCompaniesOdoo(userData.uid, userData);
+            if (companies.length) {
+              let activeId = defaultId;
+              const saved = Number(await AsyncStorage.getItem(activeCompanyKey(userData.uid)));
+              if (saved && companies.some((c) => c.id === saved)) activeId = saved;
+              const active = companies.find((c) => c.id === activeId) || companies[0];
+              userData.company_id = [active.id, active.name];
+              userData.allowed_companies = companies;
+              console.log('[COMPANY] login active =', active, 'of', companies.length);
+            }
+          } catch (e) {
+            console.warn('[COMPANY] login companies fetch failed:', e?.message || e);
+          }
+          try { invalidateAuthContextCache(); } catch (_) {}
 
           setUser(userData);
 

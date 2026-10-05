@@ -20,6 +20,13 @@ const COMPANY_PROFILE_KEY = 'companyProfile';
 // relaunch, before the post-login refresh RPC has resolved.
 const DYNAMIC_INVOICE_KEY = 'dynamicInvoiceEnabled';
 
+// The company picked in Profile, remembered per server + database + user so
+// logging out and back in keeps it (as long as it's still allowed).
+export const activeCompanyKey = (uid) => {
+    const { getOdooUrl, getOdooDb } = require('@api/config/odooConfig');
+    return `activeCompany|${getOdooUrl()}|${getOdooDb()}|${uid}`;
+};
+
 const useAuthStore = create((set, get) => ({
     isLoggedIn: false,
     user: null,
@@ -41,6 +48,26 @@ const useAuthStore = create((set, get) => ({
         } catch (e) {
             console.warn('[COMPANY] persist failed:', e?.message || e);
         }
+    },
+
+    // Switch the company every request is scoped to (Profile → Company).
+    // The interceptor reads company_id from AsyncStorage['userData'], so
+    // persist first, then drop its cached context.
+    setActiveCompany: async (company) => {
+        const user = get().user;
+        if (!user || !company?.id) return;
+        const next = { ...user, company_id: [company.id, company.name] };
+        set({ user: next });
+        try {
+            await AsyncStorage.setItem('userData', JSON.stringify(next));
+            await AsyncStorage.setItem(activeCompanyKey(user.uid || user.id), String(company.id));
+        } catch (e) {
+            console.warn('[COMPANY] switch persist failed:', e?.message || e);
+        }
+        const { invalidateAuthContextCache } = require('@api/utils/authInterceptor');
+        invalidateAuthContextCache();
+        console.log('[COMPANY] switched to', company);
+        get().refreshCompanyProfile?.().catch(() => {});
     },
 
     // Re-fetch the Odoo res.users name + login without a logout. Called

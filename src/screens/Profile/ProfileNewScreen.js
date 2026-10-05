@@ -9,6 +9,8 @@ import { useAuthStore } from '@stores/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { LogoutModal } from '@components/Modal';
+import { showToastMessage } from '@components/Toast';
+import CompanyPickerSheet from '@components/CompanyPickerSheet';
 import { SHOW_MANUAL_KEY } from '@utils/userManual';
 import { version as appVersion } from '../../../package.json';
 
@@ -54,6 +56,31 @@ const ProfileNewScreen = ({ navigation }) => {
     try { await AsyncStorage.setItem(SHOW_MANUAL_KEY, next ? 'true' : 'false'); } catch (_) {}
   };
 
+  // Company: one → shown only; more → tap to pick, then confirm the switch.
+  const setActiveCompany = useAuthStore((s) => s.setActiveCompany);
+  const companies = Array.isArray(user?.allowed_companies) ? user.allowed_companies : [];
+  const currentCompanyId = Array.isArray(user?.company_id) ? user.company_id[0] : user?.company_id;
+  const currentCompanyName = Array.isArray(user?.company_id)
+    ? user.company_id[1]
+    : companies.find((c) => c.id === currentCompanyId)?.name;
+  const canSwitchCompany = companies.length > 1;
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pendingCompany, setPendingCompany] = useState(null);
+
+  const onPickCompany = (company) => {
+    setPickerVisible(false);
+    if (company.id === currentCompanyId) return;
+    // Let the picker finish closing before the confirmation opens.
+    setTimeout(() => setPendingCompany(company), 300);
+  };
+
+  const confirmCompanySwitch = async () => {
+    const company = pendingCompany;
+    setPendingCompany(null);
+    await setActiveCompany(company);
+    showToastMessage(`Switched to ${company.name}`);
+  };
+
   const displayName =
     user?.related_profile?.name ||
     user?.user_name ||
@@ -82,6 +109,13 @@ const ProfileNewScreen = ({ navigation }) => {
       label: 'Login',
       value: user?.login || user?.user_email || subtitle || '-',
       color: '#00897B',
+    },
+    {
+      icon: 'business',
+      label: 'Company',
+      value: currentCompanyName || '-',
+      color: '#F37021',
+      onPress: canSwitchCompany ? () => setPickerVisible(true) : null,
     },
   ];
 
@@ -140,7 +174,12 @@ const ProfileNewScreen = ({ navigation }) => {
           {/* Account Details rows */}
           {details.map((item, index) => (
             <View key={index} style={{ width: '100%' }}>
-              <View style={styles.row}>
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                disabled={!item.onPress}
+                onPress={item.onPress || undefined}
+              >
                 <View style={[styles.iconBox, { backgroundColor: item.color + '18' }]}>
                   <MaterialIcons name={item.icon} size={20} color={item.color} />
                 </View>
@@ -148,7 +187,8 @@ const ProfileNewScreen = ({ navigation }) => {
                   <Text style={styles.label}>{item.label}</Text>
                   <Text style={styles.value} numberOfLines={1}>{String(item.value)}</Text>
                 </View>
-              </View>
+                {item.onPress ? <MaterialIcons name="chevron-right" size={22} color="#C4CAD4" /> : null}
+              </TouchableOpacity>
               {index < details.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
@@ -243,6 +283,42 @@ const ProfileNewScreen = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity style={[styles.confirmButton, { flex: 1 }]} onPress={() => setConfirmVisible(false)}>
               <Text style={styles.confirmButtonText}>NO</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </RNModal>
+
+      <CompanyPickerSheet
+        visible={pickerVisible}
+        companies={companies}
+        currentId={currentCompanyId}
+        onPick={onPickCompany}
+        onClose={() => setPickerVisible(false)}
+      />
+
+      {/* Company switch confirmation — same look as the toggle confirmation. */}
+      <RNModal
+        isVisible={!!pendingCompany}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        backdropOpacity={0.7}
+        animationInTiming={400}
+        animationOutTiming={300}
+        onBackButtonPress={() => setPendingCompany(null)}
+        onBackdropPress={() => setPendingCompany(null)}
+      >
+        <View style={styles.confirmContainer}>
+          <Text style={styles.confirmText}>Switch company?</Text>
+          <Text style={styles.confirmSub}>
+            Change from {currentCompanyName || 'the current company'} to {pendingCompany?.name}?
+            {'\n'}You'll see this company's registers, products and customers.
+          </Text>
+          <View style={styles.confirmRow}>
+            <TouchableOpacity style={[styles.confirmButton, { flex: 1 }]} onPress={confirmCompanySwitch}>
+              <Text style={styles.confirmButtonText}>SWITCH</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.confirmButton, { flex: 1 }]} onPress={() => setPendingCompany(null)}>
+              <Text style={styles.confirmButtonText}>CANCEL</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -490,6 +566,16 @@ const styles = StyleSheet.create({
     color: NAVY,
     textAlign: 'center',
     fontFamily: FONT_FAMILY.urbanistBold,
+  },
+  confirmSub: {
+    marginTop: -8,
+    marginBottom: 18,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4b5563',
+    textAlign: 'center',
+    fontFamily: FONT_FAMILY.urbanistMedium,
   },
   confirmRow: {
     flexDirection: 'row',

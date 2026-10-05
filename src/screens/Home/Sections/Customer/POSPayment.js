@@ -26,6 +26,7 @@ import {
   deletePosOrderOdoo,
   fetchProductTaxMap,
   fetchPosCompanyId,
+  getActiveCompanyId,
 } from '@api/services/generalApi';
 import { IdProofCards } from '@components/IdProof';
 import { SignatureCapturePopup, SignatureCards } from '@components/Signature';
@@ -638,8 +639,8 @@ const POSPayment = ({ navigation, route }) => {
       const partnerId = customer?.id || customer?._id || null;
       // The register's company, not a hard-coded 1 — on a multi-company
       // database the order must be booked against the POS it was rung on.
-      // Falls back to 1 only when the lookup genuinely can't resolve.
-      const companyId = posCompanyId || 1;
+      // Falls back to the company chosen in Profile when the lookup can't resolve.
+      const companyId = posCompanyId || getActiveCompanyId();
 
       // posConfigId is resolved on mount (see useEffect above). Re-resolve
       // here only as a fallback in case the mount-time lookup was still in

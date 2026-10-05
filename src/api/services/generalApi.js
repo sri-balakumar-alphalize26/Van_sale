@@ -2966,7 +2966,7 @@ import { generateInvoiceHtml } from '@utils/invoiceHtml';
 // + reads (POS orders) so a draft created in company A is visible to a list
 // fetched in company A — otherwise drafts can land in a company that the
 // list query doesn't see and "disappear" from MyOrders.
-const getActiveCompanyId = () => {
+export const getActiveCompanyId = () => {
   try {
     const u = useAuthStore.getState().user || {};
     const raw = u.company_id ?? u.company?.id ?? u.companyId ?? 1;
@@ -7350,8 +7350,14 @@ export const createPosOrderOdoo = async ({ partnerId = null, lines = [], session
     // when handlePay deletes the draft; sync_from_ui then ships '/'
     // itself and Odoo allocates the real sequence number exactly once.
     const placeholderName = orderName || `DRAFT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    // The order must belong to the register's company, or Odoo refuses to
+    // read its session (multi-company AccessError). Fall back to the company
+    // chosen in Profile.
+    const orderCompanyId = companyId
+      || await fetchPosCompanyId({ configId: posConfigId, sessionId })
+      || getActiveCompanyId();
     const vals = {
-      company_id: companyId || 1, // Default to 1 if not provided
+      company_id: orderCompanyId,
       name: placeholderName,
       partner_id: partnerId || false,
       lines: line_items,
@@ -7547,6 +7553,11 @@ export const createPosPaymentOdoo = async ({ orderId, payments, amount, journalI
       throw new Error('No payment(s) provided');
     }
 
+    // Same company as the order's register; else the one chosen in Profile.
+    const paymentCompanyId = companyId
+      || await fetchPosCompanyId({ sessionId })
+      || getActiveCompanyId();
+
     const results = [];
     for (const payment of paymentRecords) {
       const amt = Number(payment.amount) || 0;
@@ -7582,7 +7593,7 @@ export const createPosPaymentOdoo = async ({ orderId, payments, amount, journalI
         payment_method_id: finalPaymentMethodId,
         partner_id: partnerId || false,
         session_id: sessionId || false,
-        company_id: companyId || 1, // Corrected `CompanyId` to `companyId`
+        company_id: paymentCompanyId,
       };
 
       console.log('💳 Creating POS Payment with payload:', JSON.stringify(paymentVals, null, 2));
@@ -9757,6 +9768,44 @@ export const fetchUserProfileOdoo = async (uid) => {
   } catch (e) {
     console.warn('fetchUserProfileOdoo failed:', e?.message);
     return null;
+  }
+};
+
+// The companies the user may work in, plus their server-side default.
+// /web/session/authenticate already carries this in `user_companies`
+// (a dict keyed by id on Odoo 17+, a list of [id, name] on 13–16), so read it
+// from there first and only fall back to res.users / res.company when absent.
+// Returns { defaultId, companies: [{ id, name }] }.
+export const fetchUserCompaniesOdoo = async (uid, loginResult = null) => {
+  const uc = loginResult?.user_companies;
+  if (uc?.allowed_companies) {
+    const raw = Array.isArray(uc.allowed_companies)
+      ? uc.allowed_companies.map((c) => (Array.isArray(c) ? { id: c[0], name: c[1] } : c))
+      : Object.values(uc.allowed_companies);
+    const companies = raw
+      .filter((c) => c && c.id)
+      .map((c) => ({ id: Number(c.id), name: c.name || '' }));
+    const current = Array.isArray(uc.current_company) ? uc.current_company[0] : uc.current_company;
+    if (companies.length) return { defaultId: Number(current) || companies[0].id, companies };
+  }
+  if (!uid) return { defaultId: null, companies: [] };
+  try {
+    const call = (model, method, args, kwargs = {}) => axios.post(`${getOdooUrl()}/web/dataset/call_kw`, {
+      jsonrpc: '2.0', method: 'call', params: { model, method, args, kwargs },
+    }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
+    const uResp = await call('res.users', 'read', [[Number(uid)], ['company_id', 'company_ids']]);
+    const u = uResp.data?.result?.[0];
+    if (!u) return { defaultId: null, companies: [] };
+    const ids = u.company_ids || [];
+    // Explicit context so the read isn't narrowed to one company by the interceptor.
+    const cResp = await call('res.company', 'search_read', [[['id', 'in', ids]]], {
+      fields: ['id', 'name'], context: { allowed_company_ids: ids },
+    });
+    const companies = (cResp.data?.result || []).map((c) => ({ id: c.id, name: c.name || '' }));
+    return { defaultId: Array.isArray(u.company_id) ? u.company_id[0] : (companies[0]?.id || null), companies };
+  } catch (e) {
+    console.warn('fetchUserCompaniesOdoo failed:', e?.message);
+    return { defaultId: null, companies: [] };
   }
 };
 
