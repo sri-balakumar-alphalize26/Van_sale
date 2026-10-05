@@ -102,7 +102,11 @@ const EntryModal = ({
             <View key={b.key} style={styles.bucketRow}>
               <Text style={[styles.bucketLabel, !partner && styles.disabledText]}>{b.label} days</Text>
               <TextInput
-                style={[styles.amountInput, !partner && styles.amountDisabled]}
+                style={[
+                  styles.amountInput,
+                  !partner && styles.amountDisabled,
+                  partner && (parseInt(values[b.key], 10) || 0) > 0 && styles.amountFilled,
+                ]}
                 value={values[b.key]}
                 editable={!!partner}
                 selectTextOnFocus
@@ -113,6 +117,16 @@ const EntryModal = ({
               />
             </View>
           ))}
+
+          {/* Posted balances can't be edited or published again — make the
+              user re-check each amount before it goes on the list. */}
+          {total > 0 ? (
+            <View style={styles.warning}>
+              <Text style={styles.warningText}>
+                ⚠️ Check every amount twice. Once published, opening balances can't be changed or published again.
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total</Text>
@@ -151,6 +165,12 @@ const styles = StyleSheet.create({
     fontSize: 15, color: '#111827', fontFamily: FONT_FAMILY.urbanistSemiBold, textAlign: 'right', backgroundColor: '#fff',
   },
   amountDisabled: { backgroundColor: '#f3f4f6', color: '#9ca3af' },
+  amountFilled: { borderColor: '#f59e0b', borderWidth: 1.5 },
+  warning: {
+    backgroundColor: '#fffbeb', borderColor: '#fcd34d', borderWidth: 1, borderRadius: 12,
+    padding: 12, marginTop: 4, marginBottom: 10,
+  },
+  warningText: { fontSize: 13, color: '#92400e', fontFamily: FONT_FAMILY.urbanistSemiBold, lineHeight: 18 },
   totalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     borderTopWidth: 1, borderTopColor: '#eef0f4', paddingTop: 12, marginTop: 4,

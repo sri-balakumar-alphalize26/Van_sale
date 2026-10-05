@@ -336,6 +336,9 @@ const OpeningBalanceScreen = ({ navigation }) => {
         message={passwordMode === 'discard'
           ? 'Cancels the unfinished upload on the server (unless it was already posted) and unlocks the list.'
           : `Posts ${draft.rows.length} customer balance${draft.rows.length === 1 ? '' : 's'} (total ${money(grandTotal)}) to the accounts as a journal entry.`}
+        warning={passwordMode === 'publish'
+          ? "This can't be undone. Check all amounts — they can't be published again."
+          : null}
         defaultLogin={adminLogin}
         onSubmit={onPasswordSubmit}
         onCancel={() => setPasswordMode(null)}

@@ -12,7 +12,7 @@ const ORANGE = '#F47B20';
 const MAX_ATTEMPTS = 3;
 const LOCK_SECONDS = 60;
 
-const AdminPasswordModal = ({ visible, title, message, defaultLogin, onSubmit, onCancel }) => {
+const AdminPasswordModal = ({ visible, title, message, warning, defaultLogin, onSubmit, onCancel }) => {
   const [login, setLogin] = useState(defaultLogin || 'admin');
   const [showLogin, setShowLogin] = useState(false);
   const [password, setPassword] = useState('');
@@ -85,6 +85,11 @@ const AdminPasswordModal = ({ visible, title, message, defaultLogin, onSubmit, o
           <Text style={styles.title}>{title || 'Admin password'}</Text>
         </View>
         {message ? <Text style={styles.message}>{message}</Text> : null}
+        {warning ? (
+          <View style={styles.warning}>
+            <Text style={styles.warningText}>⚠️ {warning}</Text>
+          </View>
+        ) : null}
 
         {showLogin ? (
           <>
@@ -162,6 +167,10 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 17, fontFamily: FONT_FAMILY.urbanistBold, color: '#111827' },
   message: { fontSize: 13, color: '#4b5563', fontFamily: FONT_FAMILY.urbanistMedium, marginTop: 8, lineHeight: 18 },
+  warning: {
+    backgroundColor: '#fffbeb', borderColor: '#fcd34d', borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 10,
+  },
+  warningText: { fontSize: 13, color: '#92400e', fontFamily: FONT_FAMILY.urbanistSemiBold, lineHeight: 18 },
   asUser: { fontSize: 13, color: '#6b7280', fontFamily: FONT_FAMILY.urbanistMedium, marginTop: 12 },
   asUserBold: { fontFamily: FONT_FAMILY.urbanistBold, color: '#111827' },
   label: { fontSize: 13, fontFamily: FONT_FAMILY.urbanistSemiBold, color: '#374151', marginTop: 12, marginBottom: 4 },
